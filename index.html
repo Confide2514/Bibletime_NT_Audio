@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>성경 듣기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .player-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .current-playing {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .current-playing h2 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        
+        .current-playing p {
+            color: #666;
+        }
+        
+        audio {
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .playlist {
+            padding: 20px 30px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .day-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .day-item:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .day-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .day-info {
+            flex: 1;
+        }
+        
+        .day-number {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .day-content {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .play-icon {
+            font-size: 1.5em;
+            opacity: 0.6;
+        }
+        
+        .day-item.active .play-icon {
+            opacity: 1;
+        }
+        
+        .search-box {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📖 성경 듣기</h1>
+            <p>신약성경 92일 완독</p>
+        </div>
+        
+        <div class="player-section">
+            <div class="current-playing">
+                <h2 id="currentTitle">오디오를 선택해주세요</h2>
+                <p id="currentContent"></p>
+            </div>
+            <audio id="audioPlayer" controls controlsList="nodownload">
+                <source id="audioSource" src="" type="audio/mpeg">
+                브라우저가 오디오를 지원하지 않습니다.
+            </audio>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="검색... (예: Day01, Matt, 마태복음)">
+        </div>
+        
+        <div class="playlist" id="playlist"></div>
+    </div>
+
+    <script>
+        const audioData = [
+            { day: 1, date: "251001", content: "Matt_01-Matt_02", url: "https://drive.google.com/uc?export=download&id=1tUT9j3KfAgxJVeyr-KF4bKFugW8QqICY" },
+            { day: 2, date: "251002", content: "Matt_03-Matt_04", url: "https://drive.google.com/uc?export=download&id=1Zymmv_AeidX-fqhn5Z3tqoeMFvSISAFY" },
+            { day: 3, date: "251003", content: "Matt_05-Matt_06", url: "https://drive.google.com/uc?export=download&id=1lACyKGcbQ5bEES6gM8IiT_bapFJ3tQ-v" },
+            { day: 4, date: "251004", content: "Matt_07-Matt_08", url: "https://drive.google.com/uc?export=download&id=18_yyLM_ZMXB9yXJsvT4KLPKo3X7rBTUQ" },
+            { day: 5, date: "251005", content: "Matt_09-Matt_10", url: "https://drive.google.com/uc?export=download&id=1sxTRcExHHU29JRdtllwU8yZXJlk8u27K" },
+            { day: 6, date: "251006", content: "Matt_11-Matt_12", url: "https://drive.google.com/uc?export=download&id=130v8JN_Vf9diVy-zrjFpwSYqq2EdNIec" },
+            { day: 7, date: "251007", content: "Matt_13", url: "https://drive.google.com/uc?export=download&id=1KecCK_fuzeJ9SXcjCj5AVK2GVQiNF4yD" },
+            { day: 8, date: "251008", content: "Matt_14-Matt_15", url: "https://drive.google.com/uc?export=download&id=1Po9hiE2CTv6yaW7yVwFC5v5OYNT8PaXm" },
+            { day: 9, date: "251009", content: "Matt_16-Matt_17", url: "https://drive.google.com/uc?export=download&id=1K6ZxmIg0H4bNb7EAAALngxl3cW3ix0Eo" },
+            { day: 10, date: "251010", content: "Matt_18-Matt_19", url: "https://drive.google.com/uc?export=download&id=1uCqsdJ8BKvybYhpsNH3mzj3zbHJhKPYl" },
+            { day: 11, date: "251011", content: "Matt_20-Matt_21", url: "https://drive.google.com/uc?export=download&id=1Ev0_6pGzzYidyt-ZCAtkZk-Knc_TaHbn" },
+            { day: 12, date: "251012", content: "Matt_22-Matt_23", url: "https://drive.google.com/uc?export=download&id=1pS5cVSyDgtAyaHMozBrKm-vH5OPlRJsX" },
+            { day: 13, date: "251013", content: "Matt_24-Matt_25", url: "https://drive.google.com/uc?export=download&id=1fw8mLeuBG0VWi0nr2CBT7g2oTIiS0E-M" },
+            { day: 14, date: "251014", content: "Matt_26", url: "https://drive.google.com/uc?export=download&id=1zJo6K4erj_m8cZGsXICNwQXdl3viOp7U" },
+            { day: 15, date: "251015", content: "Matt_27-Matt_28", url: "https://drive.google.com/uc?export=download&id=1q029P35lGvpHrn2znq69vZ3p5kHs2cPq" },
+            { day: 16, date: "251016", content: "Mark_01-Mark_02", url: "https://drive.google.com/uc?export=download&id=1r02JJdmRVMevFFp94RoQRm8osNtBclGQ" },
+            { day: 17, date: "251017", content: "Mark_03-Mark_04", url: "https://drive.google.com/uc?export=download&id=1bgTr4gnmtURmF7qdey1IdoSvQ0Ty-SU1" },
+            { day: 18, date: "251018", content: "Mark_05-Mark_06", url: "https://drive.google.com/uc?export=download&id=1wIF_zb68hSPB-AoLumlVRIguQKhTJqv8" },
+            { day: 19, date: "251019", content: "Mark_07-Mark_08", url: "https://drive.google.com/uc?export=download&id=1rusaqdF2NFzdMypHJg7zQ7TLMeOIZSSQ" },
+            { day: 20, date: "251020", content: "Mark_09", url: "https://drive.google.com/uc?export=download&id=1UXijexI6docJ-xk013-4v6S7fsmu-Kcl" },
+            { day: 21, date: "251021", content: "Mark_10", url: "https://drive.google.com/uc?export=download&id=1PVXNBoGCVTiruShu1yqhBPkwOoqBHLlX" },
+            { day: 22, date: "251022", content: "Mark_11-Mark_12", url: "https://drive.google.com/uc?export=download&id=1gtmNrponIXv9YFmSy5MLr9p9qwMhSoKz" },
+            { day: 23, date: "251023", content: "Mark_13-Mark_14", url: "https://drive.google.com/uc?export=download&id=1ijssemefjEqgYexk4n5edXgviCko8m9h" },
+            { day: 24, date: "251024", content: "Mark_15-Mark_16", url: "https://drive.google.com/uc?export=download&id=1gWjRAwulGLugDOExBF64unCOJsy4inFz" },
+            { day: 25, date: "251025", content: "Luke_01", url: "https://drive.google.com/uc?export=download&id=1LztIUxIe4JohfkrcMg1VUKF1fJ7pSZxl" },
+            { day: 26, date: "251026", content: "Luke_02-Luke_03", url: "https://drive.google.com/uc?export=download&id=1VJIhKmor47K2EKYGHAUMd8qCT0BLKDRf" },
+            { day: 27, date: "251027", content: "Luke_04-Luke_05", url: "https://drive.google.com/uc?export=download&id=1g8nSl5xS8HyTZyoZDHfEwUarOYH61woy" },
+            { day: 28, date: "251028", content: "Luke_06-Luke_07", url: "https://drive.google.com/uc?export=download&id=188YA1hEYwkrS6drjRQcKELWLdiQWF6pG" },
+            { day: 29, date: "251029", content: "Luke_08-Luke_09", url: "https://drive.google.com/uc?export=download&id=1mfszqMCbwQ5JFJKMq9fgDnsmeo49kAdV" },
+            { day: 30, date: "251030", content: "Luke_10-Luke_11", url: "https://drive.google.com/uc?export=download&id=1tL_2ExK8fv16KzZVfTA9TMyv6HYfGkNk" },
+            { day: 31, date: "251031", content: "Luke_12-Luke_13", url: "https://drive.google.com/uc?export=download&id=1UcFzesz67dg7diEZjf8zr5AG_nU0TbNA" },
+            { day: 32, date: "251101", content: "Luke_14-Luke_15", url: "https://drive.google.com/uc?export=download&id=17XbvxDVvpkxLWRZkm7ujqqJRaNsuNPVC" },
+            { day: 33, date: "251102", content: "Luke_16-Luke_17", url: "https://drive.google.com/uc?export=download&id=1qEJdeD2IYQfpwgoV5n-_9Chq3JnsmPoW" },
+            { day: 34, date: "251103", content: "Luke_18-Luke_19", url: "https://drive.google.com/uc?export=download&id=1et64L7LKg7MEJSsl7hTPCGUWJ-wxK8f-" },
+            { day: 35, date: "251104", content: "Luke_20-Luke_21", url: "https://drive.google.com/uc?export=download&id=1wnh_tvg6gHZTY71xElKZiHKuCySBwunW" },
+            { day: 36, date: "251105", content: "Luke_22-Luke_23", url: "https://drive.google.com/uc?export=download&id=1e2xML6J9FJXBrTDDeGmhGHKcP3o6amM_" },
+            { day: 37, date: "251106", content: "Luke_24", url: "https://drive.google.com/uc?export=download&id=1ysn7N7qj_xmDdFbu3Kv9FKvPYECXgp0A" },
+            { day: 38, date: "251107", content: "John_01-John_02", url: "https://drive.google.com/uc?export=download&id=1TXE39MGgKClvlWnlMvr09mKI0qhmoiCy" },
+            { day: 39, date: "251108", content: "John_03-John_04", url: "https://drive.google.com/uc?export=download&id=1Z6VczpEG_thCAULD2lask7wDhtoKKYeL" },
+            { day: 40, date: "251109", content: "John_05", url: "https://drive.google.com/uc?export=download&id=1AU12rkNdO-WVnAXvU51SJWdUPkMofw_z" },
+            { day: 41, date: "251110", content: "John_06", url: "https://drive.google.com/uc?export=download&id=1TFL6nMRXDwd-MXYytftZWadPJ2po0GeZ" },
+            { day: 42, date: "251111", content: "John_07", url: "https://drive.google.com/uc?export=download&id=1-HbBzh4Sjkgo8qHWBbGZKAJxReM_VCXQ" },
+            { day: 43, date: "251112", content: "John_08", url: "https://drive.google.com/uc?export=download&id=1PzJydj4SGcl-cdRDcdb3vFTyOfoJL4RI" },
+            { day: 44, date: "251113", content: "John_09-John_10", url: "https://drive.google.com/uc?export=download&id=1Jlh9eiDm_DT2StPstL8EzFn4auf3fZLH" },
+            { day: 45, date: "251114", content: "John_11", url: "https://drive.google.com/uc?export=download&id=1IG930R4pnfmgK-ZPD_j_4bJkWh9LdFLv" },
+            { day: 46, date: "251115", content: "John_12-John_14", url: "https://drive.google.com/uc?export=download&id=1s0nLjuek--sQ3YZiCjizeW9pLjFccTsg" },
+            { day: 47, date: "251116", content: "John_15-John_18", url: "https://drive.google.com/uc?export=download&id=1FPbb2dPPanqOSIbQq6yMMbq54UQBwmUK" },
+            { day: 48, date: "251117", content: "John_19-John_21", url: "https://drive.google.com/uc?export=download&id=1aj8thFxEaFo722i5lBHrn2AwPfgMSDyN" },
+            { day: 49, date: "251118", content: "Acts_01-Acts_04", url: "https://drive.google.com/uc?export=download&id=1JVEKzC4WFXF9iG-ILJ06GvC8VIBJFQ3N" },
+            { day: 50, date: "251119", content: "Acts_05-Acts_08", url: "https://drive.google.com/uc?export=download&id=1q2TwisFxyh58K84hldW838-DTGnR2Xwv" },
+            { day: 51, date: "251120", content: "Acts_09-Acts_12", url: "https://drive.google.com/uc?export=download&id=1W1Bb4H3k69WwqAL7p98AW4zvLrUX07Id" },
+            { day: 52, date: "251121", content: "Acts_13-Acts_16", url: "https://drive.google.com/uc?export=download&id=1g3QFMaXw9v73y0V_9Czjvht8f6zPOcr6" },
+            { day: 53, date: "251122", content: "Acts_17-Acts_20", url: "https://drive.google.com/uc?export=download&id=1yFCTR9DBJzjFwt53LQLeDs2XfNwKlhrN" },
+            { day: 54, date: "251123", content: "Acts_21-Acts_24", url: "https://drive.google.com/uc?export=download&id=1CwKA8ZU7T1KIKDfQ8_UUmVu641xqraNs" },
+            { day: 55, date: "251124", content: "Acts_25-Acts_28", url: "https://drive.google.com/uc?export=download&id=16REZWD6dFWFTDRjqC5F6e7AbvK6aXxkj" },
+            { day: 56, date: "251125", content: "Rom_01-Rom_02", url: "https://drive.google.com/uc?export=download&id=1hUojJaCvWEQ4KVP_IERliSKzBCEENRCD" },
+            { day: 57, date: "251126", content: "Rom_03-Rom_04", url: "https://drive.google.com/uc?export=download&id=1heeGuNc7hO3Yo_f0KPcHbg0fRGQcie9i" },
+            { day: 58, date: "251127", content: "Rom_05-Rom_08", url: "https://drive.google.com/uc?export=download&id=1B1RJjSKwo_MQ1I--xnfGmHwwTbOjrCTL" },
+            { day: 59, date: "251128", content: "Rom_09-Rom_12", url: "https://drive.google.com/uc?export=download&id=1sky2lAvor59HjqCIo-lJ5805wY5sy-ZE" },
+            { day: 60, date: "251129", content: "Rom_13-Rom_16", url: "https://drive.google.com/uc?export=download&id=1H1hx8akpKUcLq8VLlC89iOM4kOf58uRn" },
+            { day: 61, date: "251130", content: "1Cor_01-1Cor_04", url: "https://drive.google.com/uc?export=download&id=1qh2Dk-f33v5Qz6Q9QtvlHVeLEs86g701" },
+            { day: 62, date: "251201", content: "1Cor_05-1Cor_08", url: "https://drive.google.com/uc?export=download&id=1sk_wfvQuonCHUPKV62Xh82S0Y8upeDh7" },
+            { day: 63, date: "251202", content: "1Cor_09-1Cor_12", url: "https://drive.google.com/uc?export=download&id=1Nw7wLYHe96G98F5hh7FBJnbj67uzDBF6" },
+            { day: 64, date: "251203", content: "1Cor_13-1Cor_16", url: "https://drive.google.com/uc?export=download&id=1EwvMoimlv7V9RpVUw_u0N0vjsHvCa3a4" },
+            { day: 65, date: "251204", content: "2Cor_01-2Cor_04", url: "https://drive.google.com/uc?export=download&id=1_s2bC0M1fA3AhrxKSfTnLCijcB5fC4L5" },
+            { day: 66, date: "251205", content: "2Cor_05-2Cor_08", url: "https://drive.google.com/uc?export=download&id=1b5WbFoLFQvuvfNPtKLdFCLzNW388sNFz" },
+            { day: 67, date: "251206", content: "2Cor_09-2Cor_13", url: "https://drive.google.com/uc?export=download&id=1ChQdYEhhPyqGYLhO2CSUT6qZp5Ee0Zw2" },
+            { day: 68, date: "251207", content: "Gal_01-Gal_06", url: "https://drive.google.com/uc?export=download&id=11v8hA6uEvhb2J--txnN2ZRqKe1siwUaF" },
+            { day: 69, date: "251208", content: "Eph_01-Eph_06", url: "https://drive.google.com/uc?export=download&id=1_9K2WMg0r_sv_1IXD685t2cGS-UMr0hX" },
+            { day: 70, date: "251209", content: "Phil_01-Phil_04", url: "https://drive.google.com/uc?export=download&id=13MGOnuXcZYu-bUnEnUOuhpTEKn5qh_KR" },
+            { day: 71, date: "251210", content: "Col_01-Col_04", url: "https://drive.google.com/uc?export=download&id=1S4k1ss1VGxrYUtBPMGz5lqXx3Dg_G_Y2" },
+            { day: 72, date: "251211", content: "1Thess_01-1Thess_05", url: "https://drive.google.com/uc?export=download&id=1skf45EUb6HfQgjTjlC8YJdHr1iK0fwcz" },
+            { day: 73, date: "251212", content: "2Thess_01-2Thess_03", url: "https://drive.google.com/uc?export=download&id=19bJZ1fVDFAwW7UjHmEW7kLy97bTx6E2T" },
+            { day: 74, date: "251213", content: "1Tim_01-1Tim_06", url: "https://drive.google.com/uc?export=download&id=1JYh76eR5kUjuwChC8DpDDCLIEzCo9jjF" },
+            { day: 75, date: "251214", content: "Titus_01-Titus_03", url: "https://drive.google.com/uc?export=download&id=1w0jm1wQcAh5nX31cVJ1z1xRcFHHmGz7e" },
+            { day: 76, date: "251215", content: "2Tim_01-2Tim_04", url: "https://drive.google.com/uc?export=download&id=11lGN0wkXx0-t99SN0S9kJUWpsu0kR4Sx" },
+            { day: 77, date: "251216", content: "Titus_01,Phlm_01", url: "https://drive.google.com/uc?export=download&id=1bPNNKf45vFXcO-S4J9t4iSQbvD2GoD-O" },
+            { day: 78, date: "251217", content: "Heb_01-Heb_04", url: "https://drive.google.com/uc?export=download&id=1yHXWB4YGtS-stCxpCXwxFczP6D6gkCWr" },
+            { day: 79, date: "251218", content: "Heb_05-Heb_08", url: "https://drive.google.com/uc?export=download&id=1H44j5r1zMmlRT9N0oNIIBj3CJIoQEwE4" },
+            { day: 80, date: "251219", content: "Heb_09-Heb_13", url: "https://drive.google.com/uc?export=download&id=1tPhG_Dec5KDkOYX8Qylf5Twz9NuAMD46" },
+            { day: 81, date: "251220", content: "Jas_01-Jas_05", url: "https://drive.google.com/uc?export=download&id=1a8QzmMG6yH7wzF3jk8zbPJF-fq9-nyif" },
+            { day: 82, date: "251221", content: "1Pet_01-1Pet_05", url: "https://drive.google.com/uc?export=download&id=1hTcKBUOutaTADwi9FVJamX5sR3BnHyQq" },
+            { day: 83, date: "251222", content: "2Pet_01-2Pet_03", url: "https://drive.google.com/uc?export=download&id=1aEsJuUHmYYh0EbrRW_QoSewI0Ikvgis1" },
+            { day: 84, date: "251223", content: "1John_01-1John_03", url: "https://drive.google.com/uc?export=download&id=1mvZauqGyU6QNQ1yCikyuCpNgB58zb6Kj" },
+            { day: 85, date: "251224", content: "1John_04-1John_05", url: "https://drive.google.com/uc?export=download&id=1YnUTjNfoayaXCaVCanfqgrN5bww2d83w" },
+            { day: 86, date: "251225", content: "2John_01,3John_01,Jude_01", url: "https://drive.google.com/uc?export=download&id=1rarKU7kkp4Tq390UmLCoiqXBa-BKKi-J" },
+            { day: 87, date: "251226", content: "Rev_01-Rev_04", url: "https://drive.google.com/uc?export=download&id=1Ne6NY8_35CTVQQBM_dU3t-KErBB4uHGJ" },
+            { day: 88, date: "251227", content: "Rev_05-Rev_08", url: "https://drive.google.com/uc?export=download&id=1hTazrc6z-myO8Mo7awXf7vZDDuz-IWM9" },
+            { day: 89, date: "251228", content: "Rev_09-Rev_12", url: "https://drive.google.com/uc?export=download&id=1Ot-EACmaFtVRDliYd6B8jtBYfs6WzjoC" },
+            { day: 90, date: "251229", content: "Rev_13-Rev_15", url: "https://drive.google.com/uc?export=download&id=1lbMNg9MM4IC2zseUL7LkzGPjjJ-uR1Wx" },
+            { day: 91, date: "251230", content: "Rev_16-Rev_19", url: "https://drive.google.com/uc?export=download&id=1RU_qGBd6g_WEjsulcuDvz9N61wDanjr6" },
+            { day: 92, date: "251231", content: "Rev_20-Rev_22", url: "https://drive.google.com/uc?export=download&id=1-63OFMGNqT-cJmTrkCA1NFdqLHwRR8nI" }
+        ];
+
+        let currentAudio = null;
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioSource = document.getElementById('audioSource');
+        const currentTitle = document.getElementById('currentTitle');
+        const currentContent = document.getElementById('currentContent');
+        const playlist = document.getElementById('playlist');
+        const searchInput = document.getElementById('searchInput');
+
+        function formatContent(content) {
+            return content.replace(/_/g, ' ').replace(/(\d+)/g, ' $1');
+        }
+
+        function playAudio(item) {
+            audioSource.src = item.url;
+            audioPlayer.load();
+            audioPlayer.play();
+            
+            currentTitle.textContent = `Day ${item.day}`;
+            currentContent.textContent = formatContent(item.content);
+            
+            document.querySelectorAll('.day-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-day="${item.day}"]`).classList.add('active');
+            currentAudio = item;
+        }
+
+        function renderPlaylist(items) {
+            playlist.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'day-item';
+                div.setAttribute('data-day', item.day);
+                div.innerHTML = `
+                    <div class="day-info">
+                        <div class="day-number">Day ${item.day}</div>
+                        <div class="day-content">${formatContent(item.content)}</div>
+                    </div>
+                    <div class="play-icon">▶</div>
+                `;
+                div.addEventListener('click', () => playAudio(item));
+                playlist.appendChild(div);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = audioData.filter(item => {
+                const dayStr = `day${item.day}`.toLowerCase();
+                const content = item.content.toLowerCase();
+                return dayStr.includes(searchTerm) || content.includes(searchTerm);
+            });
+            renderPlaylist(filtered);
+        });
+
+        audioPlayer.addEventListener('ended', () => {
+            const currentIndex = audioData.findIndex(item => item.day === currentAudio.day);
+            if (currentIndex < audioData.length - 1) {
+                playAudio(audioData[currentIndex + 1]);
+            }
+        });
+
+        renderPlaylist(audioData);
+    </script>
+</body>
+</html>
